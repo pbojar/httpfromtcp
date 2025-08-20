@@ -28,6 +28,13 @@ type RequestLine struct {
 	Method        string
 }
 
+func (r *RequestLine) String() string {
+	return fmt.Sprintf(
+		"Request line:\n- Method: %s\n- Target: %s\n- Version: %s\n",
+		r.Method, r.RequestTarget, r.HttpVersion,
+	)
+}
+
 const clrf = "\r\n"
 const bufferSize = 8
 
