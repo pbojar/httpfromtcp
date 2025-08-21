@@ -11,6 +11,14 @@ const clrf = "\r\n"
 
 type Headers map[string]string
 
+func (h Headers) String() string {
+	out := "Headers:\n"
+	for k, v := range h {
+		out += "- " + k + ": " + v + "\n"
+	}
+	return out
+}
+
 func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 	idx := bytes.Index(data, []byte(clrf))
 	if idx == -1 {
@@ -43,7 +51,11 @@ func kvPairFromString(headerString string) (key, value string, err error) {
 
 func (h Headers) Set(key, value string) {
 	key = strings.ToLower(key)
-	h[key] = value
+	if v, ok := h[key]; ok {
+		h[key] = v + ", " + value
+	} else {
+		h[key] = value
+	}
 }
 
 var tokenChars = []byte{'!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '^', '_', '`', '|', '~'}
@@ -62,7 +74,8 @@ func validTokens(data []byte) bool {
 func isTokenChar(c byte) bool {
 	if c >= 'A' && c <= 'Z' ||
 		c >= 'a' && c <= 'z' ||
-		c >= '0' && c <= '9' {
+		c >= '0' && c <= '9' ||
+		c == '-' {
 		return true
 	}
 

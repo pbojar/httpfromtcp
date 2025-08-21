@@ -29,6 +29,7 @@ func main() {
 			log.Fatalf("Error getting request from reader: %s\n", err)
 		}
 		fmt.Print(req.RequestLine.String())
+		fmt.Print(req.Headers.String())
 		fmt.Println("Connection to ", conn.RemoteAddr(), "closed")
 	}
 

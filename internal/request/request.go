@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/pbojar/httpfromtcp/internal/headers"
 )
 
 type status int
@@ -13,11 +15,13 @@ type status int
 const (
 	_ status = iota
 	initialized
+	parsingHeaders
 	done
 )
 
 type Request struct {
 	RequestLine RequestLine
+	Headers     headers.Headers
 
 	state status
 }
@@ -40,7 +44,8 @@ const bufferSize = 8
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 	req := &Request{
-		state: initialized,
+		state:   initialized,
+		Headers: make(headers.Headers),
 	}
 	buf := make([]byte, bufferSize)
 	readToIndex := 0
@@ -55,7 +60,9 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		nRead, err := reader.Read(buf[readToIndex:])
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				req.state = done
+				if req.state != done {
+					return nil, fmt.Errorf("incomplete request, in state: %d, read n bytes on EOF: %d", req.state, nRead)
+				}
 				break
 			}
 			return nil, err
@@ -73,6 +80,21 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 }
 
 func (r *Request) parse(data []byte) (int, error) {
+	totalBytesParsed := 0
+	for r.state != done {
+		n, err := r.parseSingle(data[totalBytesParsed:])
+		if err != nil {
+			return 0, err
+		}
+		if n == 0 {
+			break
+		}
+		totalBytesParsed += n
+	}
+	return totalBytesParsed, nil
+}
+
+func (r *Request) parseSingle(data []byte) (int, error) {
 	switch r.state {
 	case initialized:
 		requestLine, n, err := parseRequestLine(data)
@@ -85,7 +107,16 @@ func (r *Request) parse(data []byte) (int, error) {
 			return 0, nil
 		}
 		r.RequestLine = *requestLine
-		r.state = done
+		r.state = parsingHeaders
+		return n, nil
+	case parsingHeaders:
+		n, parsedHeaders, err := r.Headers.Parse(data)
+		if err != nil {
+			return 0, err
+		}
+		if parsedHeaders {
+			r.state = done
+		}
 		return n, nil
 	case done:
 		return 0, fmt.Errorf("error: trying to read data in a done state")
