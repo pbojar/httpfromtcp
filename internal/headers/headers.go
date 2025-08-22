@@ -19,6 +19,12 @@ func (h Headers) String() string {
 	return out
 }
 
+func (h Headers) Get(key string) (string, bool) {
+	key = strings.ToLower(key)
+	val, exists := h[key]
+	return val, exists
+}
+
 func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 	idx := bytes.Index(data, []byte(clrf))
 	if idx == -1 {

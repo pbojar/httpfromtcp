@@ -30,6 +30,9 @@ func main() {
 		}
 		fmt.Print(req.RequestLine.String())
 		fmt.Print(req.Headers.String())
+		if len(req.Body) != 0 {
+			fmt.Printf("Body:\n%s\n", string(req.Body))
+		}
 		fmt.Println("Connection to ", conn.RemoteAddr(), "closed")
 	}
 

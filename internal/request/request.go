@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/pbojar/httpfromtcp/internal/headers"
@@ -16,12 +17,14 @@ const (
 	_ status = iota
 	initialized
 	parsingHeaders
+	parsingBody
 	done
 )
 
 type Request struct {
 	RequestLine RequestLine
 	Headers     headers.Headers
+	Body        []byte
 
 	state status
 }
@@ -115,9 +118,27 @@ func (r *Request) parseSingle(data []byte) (int, error) {
 			return 0, err
 		}
 		if parsedHeaders {
-			r.state = done
+			r.state = parsingBody
 		}
 		return n, nil
+	case parsingBody:
+		numStr, exists := r.Headers.Get("content-length")
+		if !exists {
+			r.state = done
+			return len(data), nil
+		}
+		num, err := strconv.Atoi(numStr)
+		if err != nil {
+			return 0, fmt.Errorf("error: malformed content-length header - %s", err)
+		}
+		r.Body = append(r.Body, data...)
+		if len(r.Body) > num {
+			return 0, fmt.Errorf("error: body length (%d) exceeds expected content length (%d)", len(r.Body), num)
+		}
+		if len(r.Body) == num {
+			r.state = done
+		}
+		return len(data), nil
 	case done:
 		return 0, fmt.Errorf("error: trying to read data in a done state")
 	default:
