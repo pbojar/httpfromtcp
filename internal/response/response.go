@@ -29,16 +29,11 @@ func getStatusLine(statusCode StatusCode) string {
 	return fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, reasonMsg)
 }
 
-func WriteStatusLine(w io.Writer, statusCode StatusCode) error {
-	_, err := fmt.Fprint(w, getStatusLine(statusCode))
-	return err
-}
-
 func GetDefaultHeaders(contentLen int) headers.Headers {
 	h := make(headers.Headers)
-	h["Content-Length"] = fmt.Sprintf("%d", contentLen)
-	h["Connection"] = "close"
-	h["Content-Type"] = "text/plain"
+	h.Set("Content-Length", fmt.Sprintf("%d", contentLen))
+	h.Set("Connection", "close")
+	h.Set("Content-Type", "text/plain")
 	return h
 }
 
