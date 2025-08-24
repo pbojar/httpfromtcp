@@ -11,19 +11,19 @@ type StatusCode int
 
 const (
 	_             StatusCode = iota
-	ok                       = 200
-	badRequest               = 400
-	internalError            = 500
+	OK                       = 200
+	BadRequest               = 400
+	InternalError            = 500
 )
 
 func getStatusLine(statusCode StatusCode) string {
 	reasonMsg := ""
 	switch statusCode {
-	case ok:
+	case OK:
 		reasonMsg = "OK"
-	case badRequest:
+	case BadRequest:
 		reasonMsg = "Bad Request"
-	case internalError:
+	case InternalError:
 		reasonMsg = "Internal Server Error"
 	}
 	return fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, reasonMsg)
